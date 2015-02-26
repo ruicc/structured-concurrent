@@ -1,5 +1,20 @@
-module Control.Monad.Concurrent.Structured where
+module Control.Monad.Concurrent.Structured
+    (
+    -- * Internal Monad
+      CIO, CSTM
+    , runCIO, runCSTM
+    , atomically, atomically_
+    -- * External Monad
+    , Concurrent
+    , runConcurrent
+    -- ** Helper functions
+    , runSTM
+    , liftSTM
+    , liftIO
+    ) where
 
+import qualified Control.Concurrent.STM as S
+import qualified Control.Monad.IO.Class (liftIO)
 
 type CIO r a = ContT r IO a
 
@@ -29,9 +44,9 @@ runConcurrent action = runContT action (const $ return ())
 {-# INLINE runConcurrent #-}
 
 runSTM :: S.STM a -> CIO r a
-runSTM m = liftIO $ S.atomically m
+runSTM action = liftIO $ S.atomically action
 {-# INLINE runSTM #-}
 
 liftSTM :: S.STM a -> CSTM r a
-liftSTM m = ContT (\k -> m >>= k)
+liftSTM action = ContT (\k -> action >>= k)
 {-# INLINE liftSTM #-}
