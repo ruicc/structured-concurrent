@@ -59,18 +59,15 @@ library
   -- other-modules:       
   
   -- LANGUAGE extensions used by modules in this package.
-  other-extensions:    ScopedTypeVariables
-                     , OverloadedStrings
-                     , RecordWildCards
-                     , TemplateHaskell
+  default-extensions:  ScopedTypeVariables
                      , RankNTypes
-                     , DeriveDataTypeable
-                     , BangPatterns
-                     , NoImplicitPrelude
-                     , CPP
   
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.7 && <4.8
+                     , async
+                     , stm
+                     , transformers
+                     , mtl
   
   -- Directories containing source files.
   hs-source-dirs:      src

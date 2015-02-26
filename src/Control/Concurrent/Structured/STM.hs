@@ -1,9 +1,27 @@
-module Control.Concurrent.Structured.STM where
+module Control.Concurrent.Structured.STM
+    ( retry, orElse, check, catchSTM
+    -- * TVar
+    , newTVar, newTVarCIO, readTVar, readTVarCIO, writeTVar, modifyTVar, modifyTVar'
+    , swapTVar, registerDelay, mkWeakTVar
+    -- * TChan
+    , newTChan, newTChanCIO, newBroadcastTChan, dupTChan, cloneTChan, readTChan
+    , tryReadTChan, tryPeekTChan, writeTChan, unGetTChan, isEmptyTChan
+    -- * TMVar
+    , newTMVar, newEmptyTMVar, newTMVarCIO, newEmptyTMVarCIO
+    , takeTMVar, putTMVar, readTMVar, tryReadTMVar, swapTMVar
+    , tryTakeTMVar, tryPutTMVar, isEmptyTMVar
+    -- * TQueue
+    , newTQueue, newTQueueCIO, readTQueue, tryReadTQueue, peekTQueue, tryPeekTQueue
+    , writeTQueue, unGetTQueue, isEmptyTQueue
+    ) where
 
 
+import           Control.Monad.Concurrent.Structured (CSTM, CIO, liftSTM, liftIO, runCIO, runCSTM)
 import           Control.Monad.STM (STM)
-import           Control.Monad.Concurrent.Structured (CSTM, CIO, liftSTM, liftIO)
+import           Control.Monad.Trans.Cont (ContT(..), callCC)
 import qualified Control.Concurrent.STM as S
+import qualified Control.Exception as E
+import           System.Mem.Weak (Weak)
 
 
 retry :: CSTM r a
@@ -18,15 +36,21 @@ check :: Bool -> CSTM r ()
 check = liftSTM . S.check
 {-# INLINE check #-}
 
-catchSTM :: Exception e => (a -> STM r') -> CSTM r' a -> (e -> CSTM r' a) -> CSTM r r'
+catchSTM :: E.Exception e => (a -> STM r') -> CSTM r' a -> (e -> CSTM r' a) -> CSTM r r'
 catchSTM k action handler =
     callCC $ \ exit ->
         ContT $ \ k' -> do -- STM
-            r' <- (runContT action (\a -> k a)) `S.catchSTM` (\ e -> runContT (handler e) (\a -> k a))
-            runContT (exit r') k'
+            r' <- (runCSTM k action) `S.catchSTM` (\ e -> runCSTM k (handler e))
+            runCSTM k' (exit r')
 {-# INLINE catchSTM #-}
 
 -- | TVar
+
+type TVar = S.TVar
+type TMVar = S.TMVar
+type TChan = S.TChan
+type TQueue = S.TQueue
+
 
 newTVar :: a -> CSTM r (TVar a)
 newTVar v = liftSTM $ S.newTVar v
@@ -170,8 +194,6 @@ isEmptyTMVar tm = liftSTM $ S.isEmptyTMVar tm
 
 
 -- | TQueue
-
-type TQueue = S.TQueue
 
 newTQueue :: CSTM r (TQueue a)
 newTQueue = liftSTM S.newTQueue

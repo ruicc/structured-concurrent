@@ -3,21 +3,27 @@ module Control.Concurrent.Structured.Exception
     , catch, catch_, handle, handle_, onException, onException_
     , try, try_, mask, mask_
     , throwTo, throwCIO
-    , bracket, finally, finally_
+    , bracket, bracket_, finally, finally_
     ) where
 
 
+import           Control.Monad.Concurrent.Structured (CIO, runCIO, liftIO)
+import           Control.Monad.Trans.Cont (ContT(..), callCC)
 import qualified Control.Exception as Exception hiding
-    (catch, handle, onException, try, mask, mask_, throwTo, throwIO, bracket, finally)
+        (catch, handle, onException, try, mask, mask_, throwTo, throwIO, bracket, finally)
 import qualified Control.Exception as E
+import qualified Control.Concurrent as C
 
 
 catch :: E.Exception e => (a -> IO r') -> CIO r' a -> (e -> CIO r' a) -> CIO r r'
 catch k action handler =
     callCC $ \ exit -> do
         ContT $ \ (k' :: a -> IO r) -> do -- IO
-                r' <- runContT action k `E.catch` \ e -> runContT (handler e) (\a -> k a)
-                runContT (exit r') k'
+                -- Makes @action@ run with the last continuation @k@ which is feeded as an argument.
+                -- It means that @action@ is in the separated context from the current continuation @k'@,
+                -- and memory leaks don't occur under proper progurams.
+                r' <- runCIO k action `E.catch` \ e -> runCIO k (handler e)
+                runCIO k' (exit r')
 {-# INLINE catch #-}
 
 catch_ :: E.Exception e => CIO a a -> (e -> CIO a a) -> CIO r a
@@ -34,7 +40,7 @@ handle_ = handle (\a -> return a)
 
 onException :: (a -> IO r') -> CIO r' a -> CIO r' b -> CIO r r'
 onException k action handler =
-    catch' action $ \ (e :: SomeException) -> do
+    catch' action $ \ (e :: E.SomeException) -> do
         _ <- handler
         liftIO $ E.throwIO e
   where
@@ -49,8 +55,8 @@ try :: E.Exception e => (a -> IO r') -> CIO r' a -> CIO r (Either e r')
 try k action =
     callCC $ \ exit -> do
         ContT $ \ k' -> do -- IO
-                ei <- E.try $ runContT action (\a -> k a)
-                runContT (exit ei) k'
+                ei <- E.try $ runCIO k action
+                runCIO k' (exit ei)
 {-# INLINE try #-}
 
 try_ :: E.Exception e => CIO a a -> CIO r (Either e a)
@@ -67,10 +73,10 @@ mask k userAction =
             r' <- E.mask $ \ (unblock :: forall a. IO a -> IO a) ->
                 let
                     restore :: forall r a. CIO r a -> CIO r a
-                    restore act = ContT $ \k'' -> unblock (runContT act k'')
+                    restore act = ContT $ \k'' -> unblock (runCIO k'' act)
                 in
-                    runContT (userAction restore) (\a -> k a)
-            runContT (exit r') k'
+                    runCIO k (userAction restore)
+            runCIO k' (exit r')
 {-# INLINE mask #-}
 
 mask_
@@ -79,11 +85,11 @@ mask_
 mask_ = mask (\a -> return a)
 {-# INLINE mask_ #-}
 
-throwTo :: Exception e => ThreadId -> e -> CIO r ()
-throwTo tid e = liftIO $ Conc.throwTo tid e
+throwTo :: E.Exception e => C.ThreadId -> e -> CIO r ()
+throwTo tid e = liftIO $ C.throwTo tid e
 {-# INLINE throwTo #-}
 
-throwCIO :: Exception e => e -> CIO r a
+throwCIO :: E.Exception e => e -> CIO r a
 throwCIO = liftIO . E.throwIO
 {-# INLINE throwCIO #-}
 
