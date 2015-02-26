@@ -14,7 +14,8 @@ module Control.Monad.Concurrent.Structured
     ) where
 
 import qualified Control.Concurrent.STM as S
-import qualified Control.Monad.IO.Class (liftIO)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Trans.Cont (ContT(..), runContT)
 
 type CIO r a = ContT r IO a
 
