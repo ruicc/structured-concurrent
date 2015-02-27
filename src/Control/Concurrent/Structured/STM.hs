@@ -1,16 +1,20 @@
 module Control.Concurrent.Structured.STM
     ( retry, orElse, check, catchSTM
     -- * TVar
+    , S.TVar
     , newTVar, newTVarCIO, readTVar, readTVarCIO, writeTVar, modifyTVar, modifyTVar'
     , swapTVar, registerDelay, mkWeakTVar
     -- * TChan
+    , S.TChan
     , newTChan, newTChanCIO, newBroadcastTChan, dupTChan, cloneTChan, readTChan
     , tryReadTChan, tryPeekTChan, writeTChan, unGetTChan, isEmptyTChan
     -- * TMVar
+    , S.TMVar
     , newTMVar, newEmptyTMVar, newTMVarCIO, newEmptyTMVarCIO
     , takeTMVar, putTMVar, readTMVar, tryReadTMVar, swapTMVar
     , tryTakeTMVar, tryPutTMVar, isEmptyTMVar
     -- * TQueue
+    , S.TQueue
     , newTQueue, newTQueueCIO, readTQueue, tryReadTQueue, peekTQueue, tryPeekTQueue
     , writeTQueue, unGetTQueue, isEmptyTQueue
     ) where

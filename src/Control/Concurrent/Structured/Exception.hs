@@ -1,5 +1,6 @@
 module Control.Concurrent.Structured.Exception
     ( module Exception -- FIXME: Don't re-export directly.
+    , E.SomeException(..)
     , catch, catch_, handle, handle_, onException, onException_
     , try, try_, mask, mask_
     , throwTo, throwCIO

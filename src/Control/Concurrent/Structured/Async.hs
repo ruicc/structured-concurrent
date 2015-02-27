@@ -1,5 +1,6 @@
 module Control.Concurrent.Structured.Async
-    ( async
+    ( A.Async
+    , async
     , wait
     , race, race_
     ) where
