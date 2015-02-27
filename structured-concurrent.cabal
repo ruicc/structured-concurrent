@@ -3,7 +3,7 @@
 
 name:                structured-concurrent
 
-version:             0.1.0.0
+version:             0.1.0.1
 
 synopsis:            Exception handlings and modularities to concurrent programming
 
@@ -43,7 +43,7 @@ library
   build-depends:       base >=4.7 && <4.8
                      , async
                      , stm
-                     , transformers >=0.4.2
+                     , transformers
                      , mtl
   
   hs-source-dirs:      src
@@ -71,7 +71,7 @@ test-suite tasty
 
                      , async
                      , stm
-                     , transformers >=0.4.2
+                     , transformers
                      , mtl
 
   ghc-options:         -Wall
@@ -88,7 +88,7 @@ executable examples
   build-depends:       base >=4.7 && <4.8
                      , async
                      , stm
-                     , transformers >=0.4.2
+                     , transformers
                      , mtl
   
   hs-source-dirs:      examples, src

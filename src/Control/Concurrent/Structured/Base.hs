@@ -1,5 +1,5 @@
 module Control.Concurrent.Structured.Base
-    ( myThreadId
+    ( myThreadId, C.ThreadId
     , fork, fork_
     , forkFinally, forkFinally_
     , killThread
