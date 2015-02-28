@@ -33,12 +33,18 @@ library
   exposed-modules:     Control.Monad.Concurrent.Structured
                      , Control.Concurrent.Structured
                      , Control.Concurrent.Structured.Base
+                     , Control.Concurrent.Structured.MVar
                      , Control.Concurrent.Structured.STM
                      , Control.Concurrent.Structured.Async
                      , Control.Concurrent.Structured.Exception
   
   default-extensions:  ScopedTypeVariables
                      , RankNTypes
+
+                     , DataKinds
+                     , KindSignatures
+                     , TypeOperators
+                     , GeneralizedNewtypeDeriving
   
   build-depends:       base >=4.7 && <4.8
                      , async

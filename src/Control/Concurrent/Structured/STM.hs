@@ -20,27 +20,32 @@ module Control.Concurrent.Structured.STM
     ) where
 
 
-import           Control.Monad.Concurrent.Structured (CSTM, CIO, liftSTM, liftIO, runCIO, runCSTM)
-import           Control.Monad.STM (STM)
+import           GHC.TypeLits
+import           Control.Monad.Concurrent.Structured (CSTM, CIO, liftSTM, liftIO, runCIO, runCSTM, STM')
 import           Control.Monad.Trans.Cont (ContT(..), callCC)
 import qualified Control.Concurrent.STM as S
 import qualified Control.Exception as E
 import           System.Mem.Weak (Weak)
 
 
-retry :: CSTM r a
+retry :: CSTM n r a
 retry = liftSTM S.retry
 {-# INLINE retry #-}
 
-orElse :: CSTM r a -> CSTM r a -> CSTM r a
+orElse :: CSTM n r a -> CSTM n r a -> CSTM n r a
 orElse m n = ContT $ \ k -> S.orElse (runCSTM (\a -> k a) m) (runCSTM (\a -> k a) n)
 {-# INLINE orElse #-}
 
-check :: Bool -> CSTM r ()
+check :: Bool -> CSTM n r ()
 check = liftSTM . S.check
 {-# INLINE check #-}
 
-catchSTM :: E.Exception e => (a -> STM r') -> CSTM r' a -> (e -> CSTM r' a) -> CSTM r r'
+catchSTM
+    :: E.Exception e
+    => (a -> STM' (n + 1) r')
+    -> CSTM (n + 1) r' a
+    -> (e -> CSTM (n + 1) r' a)
+    -> CSTM n r r'
 catchSTM k action handler =
     callCC $ \ exit ->
         ContT $ \ k' -> do -- STM
@@ -56,181 +61,181 @@ type TChan = S.TChan
 type TQueue = S.TQueue
 
 
-newTVar :: a -> CSTM r (TVar a)
+newTVar :: a -> CSTM n r (TVar a)
 newTVar v = liftSTM $ S.newTVar v
 {-# INLINE newTVar #-}
 
-newTVarCIO :: a -> CIO r (TVar a)
+newTVarCIO :: a -> CIO n r (TVar a)
 newTVarCIO v = liftIO $ S.newTVarIO v
 {-# INLINE newTVarCIO #-}
 
-readTVar :: TVar a -> CSTM r a
+readTVar :: TVar a -> CSTM n r a
 readTVar v = liftSTM $ S.readTVar v
 {-# INLINE readTVar #-}
 
-readTVarCIO :: TVar a -> CIO r a
+readTVarCIO :: TVar a -> CIO n r a
 readTVarCIO tv = liftIO $ S.readTVarIO tv
 {-# INLINE readTVarCIO #-}
 
-writeTVar :: TVar a -> a -> CSTM r ()
+writeTVar :: TVar a -> a -> CSTM n r ()
 writeTVar tv v = liftSTM $ S.writeTVar tv v
 {-# INLINE writeTVar #-}
 
-modifyTVar :: TVar a -> (a -> a) -> CSTM r ()
+modifyTVar :: TVar a -> (a -> a) -> CSTM n r ()
 modifyTVar tv v  = liftSTM $ S.modifyTVar tv v
 {-# INLINE modifyTVar #-}
 
-modifyTVar' :: TVar a -> (a -> a) -> CSTM r ()
+modifyTVar' :: TVar a -> (a -> a) -> CSTM n r ()
 modifyTVar' tv v = liftSTM $ S.modifyTVar' tv v
 {-# INLINE modifyTVar' #-}
 
-swapTVar :: TVar a -> a -> CSTM r a
+swapTVar :: TVar a -> a -> CSTM n r a
 swapTVar tv v = liftSTM $ S.swapTVar tv v
 {-# INLINE swapTVar #-}
 
-registerDelay :: Int -> CIO r (TVar Bool)
+registerDelay :: Int -> CIO n r (TVar Bool)
 registerDelay v = liftIO $ S.registerDelay v
 {-# INLINE registerDelay #-}
 
-mkWeakTVar :: TVar a -> CIO () () -> CIO r (Weak (TVar a))
+mkWeakTVar :: TVar a -> CIO n () () -> CIO n r (Weak (TVar a))
 mkWeakTVar tv finalizer = liftIO $ S.mkWeakTVar tv (runCIO (\a -> return a) finalizer)
 {-# INLINE mkWeakTVar #-}
 
 -- | TChan
 
-newTChan :: CSTM r (TChan a)
+newTChan :: CSTM n r (TChan a)
 newTChan = liftSTM S.newTChan
 {-# INLINE newTChan #-}
 
-newTChanCIO :: CIO r (TChan a)
+newTChanCIO :: CIO n r (TChan a)
 newTChanCIO = liftIO S.newTChanIO
 {-# INLINE newTChanCIO #-}
 
-newBroadcastTChan :: CSTM r (TChan a)
+newBroadcastTChan :: CSTM n r (TChan a)
 newBroadcastTChan = liftSTM S.newBroadcastTChan
 {-# INLINE newBroadcastTChan #-}
 
-dupTChan :: TChan a -> CSTM r (TChan a)
+dupTChan :: TChan a -> CSTM n r (TChan a)
 dupTChan tc = liftSTM $ S.dupTChan tc
 {-# INLINE dupTChan #-}
 
-cloneTChan :: TChan a -> CSTM r (TChan a)
+cloneTChan :: TChan a -> CSTM n r (TChan a)
 cloneTChan tc = liftSTM $ S.cloneTChan tc
 {-# INLINE cloneTChan #-}
 
-readTChan :: TChan a -> CSTM r a
+readTChan :: TChan a -> CSTM n r a
 readTChan tc = liftSTM $ S.readTChan tc
 {-# INLINE readTChan #-}
 
-tryReadTChan :: TChan a -> CSTM r (Maybe a)
+tryReadTChan :: TChan a -> CSTM n r (Maybe a)
 tryReadTChan tc = liftSTM $ S.tryReadTChan tc
 {-# INLINE tryReadTChan #-}
 
-tryPeekTChan :: TChan a -> CSTM r (Maybe a)
+tryPeekTChan :: TChan a -> CSTM n r (Maybe a)
 tryPeekTChan tc = liftSTM $ S.tryPeekTChan tc
 {-# INLINE tryPeekTChan #-}
 
-writeTChan :: TChan a -> a -> CSTM r ()
+writeTChan :: TChan a -> a -> CSTM n r ()
 writeTChan tc v = liftSTM $ S.writeTChan tc v
 {-# INLINE writeTChan #-}
 
-unGetTChan :: TChan a -> a -> CSTM r ()
+unGetTChan :: TChan a -> a -> CSTM n r ()
 unGetTChan tc v = liftSTM $ S.unGetTChan tc v
 {-# INLINE unGetTChan #-}
 
-isEmptyTChan :: TChan a -> CSTM r Bool
+isEmptyTChan :: TChan a -> CSTM n r Bool
 isEmptyTChan tc = liftSTM $ S.isEmptyTChan tc
 {-# INLINE isEmptyTChan #-}
 
 
 -- | TMVar
 
-newTMVar :: a -> CSTM r (TMVar a)
+newTMVar :: a -> CSTM n r (TMVar a)
 newTMVar v = liftSTM $ S.newTMVar v
 {-# INLINE newTMVar #-}
 
-newEmptyTMVar :: CSTM r (TMVar a)
+newEmptyTMVar :: CSTM n r (TMVar a)
 newEmptyTMVar = liftSTM S.newEmptyTMVar
 {-# INLINE newEmptyTMVar #-}
 
-newTMVarCIO :: a -> CIO r (TMVar a) 
+newTMVarCIO :: a -> CIO n r (TMVar a) 
 newTMVarCIO v = liftIO $ S.newTMVarIO v
 {-# INLINE newTMVarCIO #-}
 
-newEmptyTMVarCIO :: CIO r (TMVar a) 
+newEmptyTMVarCIO :: CIO n r (TMVar a) 
 newEmptyTMVarCIO = liftIO S.newEmptyTMVarIO
 {-# INLINE newEmptyTMVarCIO #-}
 
-takeTMVar :: TMVar a -> CSTM r a
+takeTMVar :: TMVar a -> CSTM n r a
 takeTMVar tm = liftSTM $ S.takeTMVar tm
 {-# INLINE takeTMVar #-}
 
-putTMVar :: TMVar a -> a -> CSTM r ()
+putTMVar :: TMVar a -> a -> CSTM n r ()
 putTMVar tm v = liftSTM $ S.putTMVar tm v
 {-# INLINE putTMVar #-}
 
-readTMVar :: TMVar a -> CSTM r a 
+readTMVar :: TMVar a -> CSTM n r a 
 readTMVar tm = liftSTM $ S.readTMVar tm
 {-# INLINE readTMVar #-}
 
-tryReadTMVar :: TMVar a -> CSTM r (Maybe a)
+tryReadTMVar :: TMVar a -> CSTM n r (Maybe a)
 tryReadTMVar tm = liftSTM $ S.tryReadTMVar tm
 {-# INLINE tryReadTMVar #-}
 
-swapTMVar :: TMVar a -> a -> CSTM r a
+swapTMVar :: TMVar a -> a -> CSTM n r a
 swapTMVar tm v = liftSTM $ S.swapTMVar tm v
 {-# INLINE swapTMVar #-}
 
-tryTakeTMVar :: TMVar a -> CSTM r (Maybe a)
+tryTakeTMVar :: TMVar a -> CSTM n r (Maybe a)
 tryTakeTMVar tm = liftSTM $ S.tryTakeTMVar tm
 {-# INLINE tryTakeTMVar #-}
 
-tryPutTMVar :: TMVar a -> a -> CSTM r Bool
+tryPutTMVar :: TMVar a -> a -> CSTM n r Bool
 tryPutTMVar tm v = liftSTM $ S.tryPutTMVar tm v
 {-# INLINE tryPutTMVar #-}
 
-isEmptyTMVar :: TMVar a -> CSTM r Bool
+isEmptyTMVar :: TMVar a -> CSTM n r Bool
 isEmptyTMVar tm = liftSTM $ S.isEmptyTMVar tm
 {-# INLINE isEmptyTMVar #-}
 
---mkWeakTMVar :: TMVar a -> CIO () () -> CIO r (Weak (TMVar a))
+--mkWeakTMVar :: TMVar a -> CIO n () () -> CIO n r (Weak (TMVar a))
 --mkWeakTMVar tmv finalizer = liftIO $ S.mkWeakTMVar tmv (runCIO return finalizer)
 
 
 -- | TQueue
 
-newTQueue :: CSTM r (TQueue a)
+newTQueue :: CSTM n r (TQueue a)
 newTQueue = liftSTM S.newTQueue
 {-# INLINE newTQueue #-}
 
-newTQueueCIO :: CIO r (TQueue a)
+newTQueueCIO :: CIO n r (TQueue a)
 newTQueueCIO = liftIO S.newTQueueIO
 {-# INLINE newTQueueCIO #-}
 
-readTQueue :: TQueue a -> CSTM r a
+readTQueue :: TQueue a -> CSTM n r a
 readTQueue q = liftSTM $ S.readTQueue q
 {-# INLINE readTQueue #-}
 
-tryReadTQueue :: TQueue a -> CSTM r (Maybe a)
+tryReadTQueue :: TQueue a -> CSTM n r (Maybe a)
 tryReadTQueue q = liftSTM $ S.tryReadTQueue q
 {-# INLINE tryReadTQueue #-}
 
-peekTQueue :: TQueue a -> CSTM r a
+peekTQueue :: TQueue a -> CSTM n r a
 peekTQueue q = liftSTM $ S.peekTQueue q
 {-# INLINE peekTQueue #-}
 
-tryPeekTQueue :: TQueue a -> CSTM r (Maybe a)
+tryPeekTQueue :: TQueue a -> CSTM n r (Maybe a)
 tryPeekTQueue q = liftSTM $ S.tryPeekTQueue q
 {-# INLINE tryPeekTQueue #-}
 
-writeTQueue :: TQueue a -> a -> CSTM r ()
+writeTQueue :: TQueue a -> a -> CSTM n r ()
 writeTQueue q v = liftSTM $ S.writeTQueue q v
 {-# INLINE writeTQueue #-}
 
-unGetTQueue :: TQueue a -> a -> CSTM r ()
+unGetTQueue :: TQueue a -> a -> CSTM n r ()
 unGetTQueue q v = liftSTM $ S.unGetTQueue q v
 {-# INLINE unGetTQueue #-}
 
-isEmptyTQueue :: TQueue a -> CSTM r Bool
+isEmptyTQueue :: TQueue a -> CSTM n r Bool
 isEmptyTQueue q = liftSTM $ S.isEmptyTQueue q
 {-# INLINE isEmptyTQueue #-}

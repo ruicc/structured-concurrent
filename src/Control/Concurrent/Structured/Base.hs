@@ -6,29 +6,30 @@ module Control.Concurrent.Structured.Base
     , threadDelay
     ) where
 
+import           GHC.TypeLits
 import           Control.Monad (void)
-import           Control.Monad.Concurrent.Structured (CIO, runCIO, liftIO)
+import           Control.Monad.Concurrent.Structured (CIO, runCIO, liftIO, IO')
 import           Control.Concurrent.Structured.Exception (mask_, try)
 import qualified Control.Concurrent as C
 import qualified Control.Exception as E
 
-myThreadId :: CIO r C.ThreadId
+myThreadId :: CIO n r C.ThreadId
 myThreadId = liftIO C.myThreadId
 {-# INLINE myThreadId #-}
 
-fork :: (a -> IO r') -> CIO r' a -> CIO r C.ThreadId
+fork :: (a -> IO' (n + 1) r') -> CIO (n + 1) r' a -> CIO n r C.ThreadId
 fork k action = liftIO $ C.forkIO (void $ runCIO (\a -> k a) action)
 {-# INLINE fork #-}
 
-fork_ :: CIO a a -> CIO r C.ThreadId
+fork_ :: CIO (n + 1) a a -> CIO n r C.ThreadId
 fork_ = fork return
 {-# INLINE fork_ #-}
 
 forkFinally
-    :: (a -> IO r')
-    -> CIO r' a
-    -> (Either E.SomeException r' -> CIO r'' r'')
-    -> CIO r C.ThreadId
+    :: (a -> IO' (n + 1) r')
+    -> CIO (n + 1) r' a
+    -> (Either E.SomeException r' -> CIO (n + 1) r'' r'')
+    -> CIO n r C.ThreadId
 forkFinally k action finalizer =
     mask_ $ \ restore ->
         fork
@@ -37,9 +38,9 @@ forkFinally k action finalizer =
 {-# INLINE forkFinally #-}
 
 forkFinally_
-    :: CIO a a
-    -> (Either E.SomeException a -> CIO r' r')
-    -> CIO r C.ThreadId
+    :: CIO (n + 1) a a
+    -> (Either E.SomeException a -> CIO (n + 1) r' r')
+    -> CIO n r C.ThreadId
 forkFinally_ = forkFinally (\a -> return a)
 {-# INLINE forkFinally_ #-}
 
@@ -51,10 +52,10 @@ forkFinally_ = forkFinally (\a -> return a)
 --    in
 --        runConcurrent return (userAction unmask)
 
-killThread :: C.ThreadId -> CIO r ()
+killThread :: C.ThreadId -> CIO n r ()
 killThread tid = liftIO $ C.killThread tid
 {-# INLINE killThread #-}
 
-threadDelay :: Int -> CIO r ()
+threadDelay :: Int -> CIO n r ()
 threadDelay n = liftIO $ C.threadDelay n
 {-# INLINE threadDelay #-}
