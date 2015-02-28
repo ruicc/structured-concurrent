@@ -1,15 +1,19 @@
 module Main where
 
+import           GHC.TypeLits
 import           Test.Tasty
 --import           Test.Tasty.HUnit as HU
 import           Test.Tasty.QuickCheck as QC
 import           System.Exit (exitFailure, exitSuccess)
 
 import           Control.Applicative
+import           Control.Monad.Trans.Cont
 import           Control.Concurrent.Structured
 import           Control.Exception (ErrorCall(..))
 
-
+--runRoot :: (a -> IO' 0 r) -> CIO 0 r a -> IO r
+--runRoot k action = runContT action (\a -> k a)
+--
 main :: IO ()
 main = do
     b <- all id <$> (sequence $ map (runCIO return) tests)
@@ -18,17 +22,18 @@ main = do
         then exitSuccess
         else exitFailure
 
-tests :: [CIO r Bool]
+tests :: [CIO n r Bool]
 tests =
     [ test_fork_normal
     , test_fork_exception
     , test_catch_normal
     , test_catch_exception
+    , test_illegal_loop
     ]
 
 type TestChan = TChan Int
 
-test_fork_normal :: CIO r Bool
+test_fork_normal :: CIO n r Bool
 test_fork_normal = do
     tch <- newTChanCIO
     let
@@ -45,7 +50,7 @@ test_fork_normal = do
 
     assertTestChan tch [1, 2]
 
-test_fork_exception :: CIO r Bool
+test_fork_exception :: CIO n r Bool
 test_fork_exception = do
     tch <- newTChanCIO
     notice <- newEmptyMVar
@@ -64,7 +69,7 @@ test_fork_exception = do
 
     assertTestChan tch [1, 2]
 
-test_catch_normal :: CIO r Bool
+test_catch_normal :: CIO n r Bool
 test_catch_normal = do
     tch <- newTChanCIO
 
@@ -77,7 +82,7 @@ test_catch_normal = do
 
     assertTestChan tch [1]
 
-test_catch_exception :: CIO r Bool
+test_catch_exception :: CIO n r Bool
 test_catch_exception = do
     tch <- newTChanCIO
 
@@ -92,12 +97,32 @@ test_catch_exception = do
 
     assertTestChan tch [1, 2]
 
+---- This should be compile error..
+--test_illegal_loop :: CIO n r Bool
+--test_illegal_loop = do
+--    tch <- newTChanCIO
+--
+--    let
+--        write n = atomically_ $ writeTChan tch n
+--        action = do
+--            write 1
+--            throwErr
+--        handler (_ :: SomeException) = write 2
+--
+--        loop :: CIO n r ()
+--        loop = handle_ handler $ do
+--            loop
+--
+--    loop
+--
+--    assertTestChan tch [1, 2]
+
 --------------------------------------------------------------------------------
 -- Helper
 
 throwErr = throwCIO $ ErrorCall "heyhey"
 
-assertTestChan :: TestChan -> [Int] -> CIO r Bool
+assertTestChan :: TestChan -> [Int] -> CIO n r Bool
 assertTestChan tch [] = do
     mx <- atomically_ $ tryReadTChan tch
     case mx of

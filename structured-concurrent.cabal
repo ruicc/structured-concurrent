@@ -68,6 +68,11 @@ test-suite tasty
   default-extensions:  ScopedTypeVariables
                      , RankNTypes
 
+                     , DataKinds
+                     , KindSignatures
+                     , TypeOperators
+                     , GeneralizedNewtypeDeriving
+
   hs-source-dirs:      tests
                      , src
 
@@ -90,6 +95,11 @@ executable examples
   
   default-extensions:  ScopedTypeVariables
                      , RankNTypes
+
+                     , DataKinds
+                     , KindSignatures
+                     , TypeOperators
+                     , GeneralizedNewtypeDeriving
   
   build-depends:       base >=4.7 && <4.8
                      , async
