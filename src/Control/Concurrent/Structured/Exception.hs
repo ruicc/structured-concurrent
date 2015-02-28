@@ -73,7 +73,7 @@ mask k userAction =
         ContT $ \ k' -> do -- IO
             r' <- E.mask $ \ (unblock :: forall a. IO a -> IO a) ->
                 let
-                    restore :: forall r a. CIO r a -> CIO r a
+                    restore :: forall r' b. CIO r' b -> CIO r' b
                     restore act = ContT $ \k'' -> unblock (runCIO k'' act)
                 in
                     runCIO k (userAction restore)
@@ -81,8 +81,8 @@ mask k userAction =
 {-# INLINE mask #-}
 
 mask_
-    :: ((forall s b. CIO s b -> CIO s b) -> CIO a a)
-    -> CIO r a
+    :: ((forall s b. CIO s b -> CIO s b) -> CIO r' r')
+    -> CIO r r'
 mask_ = mask (\a -> return a)
 {-# INLINE mask_ #-}
 

@@ -3,12 +3,13 @@ module Control.Concurrent.Structured.Base
     , fork, fork_
     , forkFinally, forkFinally_
     , killThread
+    , CSE.throwTo
     , threadDelay
     ) where
 
 import           Control.Monad (void)
 import           Control.Monad.Concurrent.Structured (CIO, runCIO, liftIO)
-import           Control.Concurrent.Structured.Exception (mask_, try)
+import           Control.Concurrent.Structured.Exception as CSE (mask_, try, throwTo)
 import qualified Control.Concurrent as C
 import qualified Control.Exception as E
 
@@ -27,7 +28,7 @@ fork_ = fork return
 forkFinally
     :: (a -> IO r')
     -> CIO r' a
-    -> (Either E.SomeException r' -> CIO r'' r'')
+    -> (Either E.SomeException r' -> CIO t t)
     -> CIO r C.ThreadId
 forkFinally k action finalizer =
     mask_ $ \ restore ->
