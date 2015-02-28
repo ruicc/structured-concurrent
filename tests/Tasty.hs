@@ -12,57 +12,90 @@ import           Control.Exception (ErrorCall(..))
 
 main :: IO ()
 main = do
-    let
-        runCIO_ = runCIO return
-        tests =
-            [ runCIO_ $ do
-                tch <- newTChanCIO
-                fork_normal tch
-            , runCIO_ $ do
-                tch <- newTChanCIO
-                fork_exception tch
-            ]
-
-    b <- all id <$> sequence tests
+    b <- all id <$> (sequence $ map (runCIO return) tests)
 
     if b
         then exitSuccess
         else exitFailure
 
+tests :: [CIO r Bool]
+tests =
+    [ test_fork_normal
+    , test_fork_exception
+    , test_catch_normal
+    , test_catch_exception
+    ]
 
 type TestChan = TChan Int
 
-fork_normal :: TestChan -> CIO r Bool
-fork_normal tch = do
+test_fork_normal :: CIO r Bool
+test_fork_normal = do
+    tch <- newTChanCIO
     let
-        handler _ = atomically_ $ writeTChan tch 2
+        write n = atomically_ $ writeTChan tch n
+        handler _ = write 2
 
     notice <- newEmptyMVar
 
     (`forkFinally_` handler) $ do
-        atomically_ $ writeTChan tch 1
+        write 1
         putMVar notice ()
 
     takeMVar notice
 
     assertTestChan tch [1, 2]
 
-fork_exception :: TestChan -> CIO r Bool
-fork_exception tch = do
+test_fork_exception :: CIO r Bool
+test_fork_exception = do
+    tch <- newTChanCIO
     notice <- newEmptyMVar
 
     let
+        write n = atomically_ $ writeTChan tch n
         handler _ = do
-            atomically_ $ writeTChan tch 2
+            write 2
             tryPutMVar notice ()
 
-    (`forkFinally_` handler) $ do
-        atomically_ $ writeTChan tch 1
-        throwCIO $ ErrorCall "heyhey"
+    _ <- (`forkFinally_` handler) $ do
+        write 1
+        throwErr
 
     takeMVar notice
 
     assertTestChan tch [1, 2]
+
+test_catch_normal :: CIO r Bool
+test_catch_normal = do
+    tch <- newTChanCIO
+
+    let
+        write n = atomically_ $ writeTChan tch n
+        action = write 1
+        handler (_ :: SomeException) = write 2
+
+    action `catch_` handler
+
+    assertTestChan tch [1]
+
+test_catch_exception :: CIO r Bool
+test_catch_exception = do
+    tch <- newTChanCIO
+
+    let
+        write n = atomically_ $ writeTChan tch n
+        action = do
+            write 1
+            throwErr
+        handler (_ :: SomeException) = write 2
+
+    action `catch_` handler
+
+    assertTestChan tch [1, 2]
+
+--------------------------------------------------------------------------------
+-- Helper
+
+throwErr = throwCIO $ ErrorCall "heyhey"
 
 assertTestChan :: TestChan -> [Int] -> CIO r Bool
 assertTestChan tch [] = do
@@ -71,7 +104,7 @@ assertTestChan tch [] = do
         Just _ -> return False
         Nothing -> return True
 assertTestChan tch (x:xs) = do
-    v <- atomically_ $ readTChan tch
-    if v == x
-        then assertTestChan tch xs
-        else return False
+    mv <- atomically_ $ tryReadTChan tch
+    case mv of
+        Just v | v == x -> assertTestChan tch xs
+        _ -> return False
