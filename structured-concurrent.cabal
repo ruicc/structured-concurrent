@@ -33,6 +33,8 @@ library
   exposed-modules:     Control.Monad.Concurrent.Structured
                      , Control.Concurrent.Structured
                      , Control.Concurrent.Structured.Base
+                     , Control.Concurrent.Structured.MVar
+                     , Control.Concurrent.Structured.Chan
                      , Control.Concurrent.Structured.STM
                      , Control.Concurrent.Structured.Async
                      , Control.Concurrent.Structured.Exception
