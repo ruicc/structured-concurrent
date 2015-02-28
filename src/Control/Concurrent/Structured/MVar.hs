@@ -5,7 +5,7 @@ module Control.Concurrent.Structured.MVar
     , tryTakeMVar, tryPutMVar, isEmptyMVar
     ) where
 
-import           Control.Monad.Concurrent.Structured (CIO, runCIO, liftIO)
+import           Control.Monad.Concurrent.Structured (CIO, liftIO)
 import qualified Control.Concurrent.MVar as MV
 
 type MVar = MV.MVar

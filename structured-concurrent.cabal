@@ -35,6 +35,7 @@ library
                      , Control.Concurrent.Structured.Base
                      , Control.Concurrent.Structured.MVar
                      , Control.Concurrent.Structured.Chan
+                     , Control.Concurrent.Structured.QSem
                      , Control.Concurrent.Structured.STM
                      , Control.Concurrent.Structured.Async
                      , Control.Concurrent.Structured.Exception
