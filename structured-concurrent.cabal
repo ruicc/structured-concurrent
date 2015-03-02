@@ -3,7 +3,7 @@
 
 name:                structured-concurrent
 
-version:             0.1.0.1
+version:             0.1.0.2
 
 synopsis:            Exception handlings and modularities to concurrent programming
 
