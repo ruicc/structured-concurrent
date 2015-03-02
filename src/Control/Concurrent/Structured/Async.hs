@@ -1,6 +1,6 @@
 module Control.Concurrent.Structured.Async
     ( A.Async
-    , async, asyncBound, asyncOn, asyncWithUnmask, asyncOnWithUnmask
+    , async, async_, asyncBound, asyncOn, asyncWithUnmask, asyncOnWithUnmask
     , withAsync, withAsync_
     , withAsyncBound, withAsyncBound_
     , withAsyncOn, withAsyncOn_
@@ -24,6 +24,10 @@ import           Data.Traversable (Traversable)
 async :: (a -> IO r') -> CIO r' a -> CIO r (A.Async r')
 async k m = liftIO $ A.async (runCIO k m)
 {-# INLINE async #-}
+
+async_ :: CIO r' r' -> CIO r (A.Async r')
+async_ = async return
+{-# INLINE async_ #-}
 
 asyncBound :: (a -> IO r') -> CIO r' a -> CIO r (A.Async r')
 asyncBound k m = liftIO $ A.asyncBound (runCIO k m)
