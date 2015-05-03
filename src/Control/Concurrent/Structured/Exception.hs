@@ -20,11 +20,11 @@ catch :: E.Exception e => (a -> IO r') -> CIO r' a -> (e -> CIO r' a) -> CIO r r
 catch k action handler =
     callCC $ \ exit -> do
         ContT $ \ (k' :: a -> IO r) -> do -- IO
-                -- Makes @action@ run with the last continuation @k@ which is feeded as an argument.
-                -- It means that @action@ is in the separated context from the current continuation @k'@,
-                -- and memory leaks don't occur under proper progurams.
-                r' <- runCIO k action `E.catch` \ e -> runCIO k (handler e)
-                runCIO k' (exit r')
+            -- @action@ runs with the last continuation @k@ which is feeded as an argument.
+            -- It means that @action@ runs in the separated context from the current continuation @k'@,
+            -- and memory leaks don't occur under proper programs.
+            r' <- runCIO k action `E.catch` \ e -> runCIO k (handler e)
+            runCIO k' (exit r')
 {-# INLINE catch #-}
 
 catch_ :: E.Exception e => CIO a a -> (e -> CIO a a) -> CIO r a
