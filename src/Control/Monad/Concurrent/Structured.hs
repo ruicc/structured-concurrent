@@ -26,28 +26,28 @@ type Concurrent a = CIO () a
 
 runCIO :: (a -> IO r) -> CIO r a -> IO r
 runCIO k action = runContT action (\a -> k a)
-{-# INLINE runCIO #-}
+{-# INLINABLE runCIO #-}
 
 runCSTM :: (a -> S.STM r) -> CSTM r a -> S.STM r
 runCSTM k action = runContT action (\a -> k a)
-{-# INLINE runCSTM #-}
+{-# INLINABLE runCSTM #-}
 
 atomically :: (a -> S.STM r') -> CSTM r' a -> CIO r r'
 atomically k action = liftIO $ S.atomically $ runContT action (\a -> k a)
-{-# INLINE atomically #-}
+{-# INLINABLE atomically #-}
 
 atomically_ :: CSTM r' r' -> CIO r r'
 atomically_ = atomically return
-{-# INLINE atomically_ #-}
+{-# INLINABLE atomically_ #-}
 
 runConcurrent :: Concurrent a -> IO ()
 runConcurrent action = runContT action (const $ return ())
-{-# INLINE runConcurrent #-}
+{-# INLINABLE runConcurrent #-}
 
 runSTM :: S.STM a -> CIO r a
 runSTM action = liftIO $ S.atomically action
-{-# INLINE runSTM #-}
+{-# INLINABLE runSTM #-}
 
 liftSTM :: S.STM a -> CSTM r a
 liftSTM action = ContT (\k -> action >>= k)
-{-# INLINE liftSTM #-}
+{-# INLINABLE liftSTM #-}

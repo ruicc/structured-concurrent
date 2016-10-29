@@ -25,19 +25,19 @@ catch k action handler =
             -- and memory leaks don't occur under proper programs.
             r' <- runCIO k action `E.catch` \ e -> runCIO k (handler e)
             runCIO k' (exit r')
-{-# INLINE catch #-}
+{-# INLINABLE catch #-}
 
 catch_ :: E.Exception e => CIO a a -> (e -> CIO a a) -> CIO r a
 catch_ = catch (\a -> return a)
-{-# INLINE catch_ #-}
+{-# INLINABLE catch_ #-}
 
 handle :: E.Exception e => (a -> IO b) -> (e -> CIO b a) -> CIO b a -> CIO r b
 handle k handler action = catch (\a -> k a) action handler
-{-# INLINE handle #-}
+{-# INLINABLE handle #-}
 
 handle_ :: E.Exception e => (e -> CIO a a) -> CIO a a -> CIO r a
 handle_ = handle (\a -> return a)
-{-# INLINE handle_ #-}
+{-# INLINABLE handle_ #-}
 
 onException :: (a -> IO r') -> CIO r' a -> CIO r' b -> CIO r r'
 onException k action handler =
@@ -46,11 +46,11 @@ onException k action handler =
         liftIO $ E.throwIO e
   where
     catch' = catch (\a -> k a)
-{-# INLINE onException #-}
+{-# INLINABLE onException #-}
 
 onException_ :: CIO a a -> CIO a b -> CIO r a
 onException_ = onException (\a -> return a)
-{-# INLINE onException_ #-}
+{-# INLINABLE onException_ #-}
 
 try :: E.Exception e => (a -> IO r') -> CIO r' a -> CIO r (Either e r')
 try k action =
@@ -58,11 +58,11 @@ try k action =
         ContT $ \ k' -> do -- IO
                 ei <- E.try $ runCIO k action
                 runCIO k' (exit ei)
-{-# INLINE try #-}
+{-# INLINABLE try #-}
 
 try_ :: E.Exception e => CIO a a -> CIO r (Either e a)
 try_ = try (\a -> return a)
-{-# INLINE try_ #-}
+{-# INLINABLE try_ #-}
 
 mask
     :: (a -> IO r') -- ^ Last action to feed to 2nd arg
@@ -78,21 +78,21 @@ mask k userAction =
                 in
                     runCIO k (userAction restore)
             runCIO k' (exit r')
-{-# INLINE mask #-}
+{-# INLINABLE mask #-}
 
 mask_
     :: ((forall s b. CIO s b -> CIO s b) -> CIO r' r')
     -> CIO r r'
 mask_ = mask (\a -> return a)
-{-# INLINE mask_ #-}
+{-# INLINABLE mask_ #-}
 
 throwTo :: E.Exception e => C.ThreadId -> e -> CIO r ()
 throwTo tid e = liftIO $ C.throwTo tid e
-{-# INLINE throwTo #-}
+{-# INLINABLE throwTo #-}
 
 throwCIO :: E.Exception e => e -> CIO r a
 throwCIO = liftIO . E.throwIO
-{-# INLINE throwCIO #-}
+{-# INLINABLE throwCIO #-}
 
 bracket
     :: (c -> IO r')
@@ -108,7 +108,7 @@ bracket k before after action =
         return r
   where
     onException' = onException (\a -> k a)
-{-# INLINE bracket #-}
+{-# INLINABLE bracket #-}
 
 bracket_
     :: CIO r' a -- ^ before (typically, gaining a resource)
@@ -116,7 +116,7 @@ bracket_
     -> (a -> CIO r' r') -- ^ action (use the resrouce)
     -> CIO r r'
 bracket_ = bracket (\a -> return a)
-{-# INLINE bracket_ #-}
+{-# INLINABLE bracket_ #-}
 
 finally
     :: (a -> IO r') -- ^ last action to feed
@@ -130,11 +130,11 @@ finally k action finalizer =
         return r'
   where
     onException' = onException (\a -> k a)
-{-# INLINE finally #-}
+{-# INLINABLE finally #-}
 
 finally_
     :: CIO a a -- ^ action
     -> CIO a t -- ^ finalizer
     -> CIO r a
 finally_ = finally (\a -> return a)
-{-# INLINE finally_ #-}
+{-# INLINABLE finally_ #-}

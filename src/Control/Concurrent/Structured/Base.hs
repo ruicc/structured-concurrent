@@ -15,15 +15,15 @@ import qualified Control.Exception as E
 
 myThreadId :: CIO r C.ThreadId
 myThreadId = liftIO C.myThreadId
-{-# INLINE myThreadId #-}
+{-# INLINABLE myThreadId #-}
 
 fork :: (a -> IO r') -> CIO r' a -> CIO r C.ThreadId
 fork k action = liftIO $ C.forkIO (void $ runCIO (\a -> k a) action)
-{-# INLINE fork #-}
+{-# INLINABLE fork #-}
 
 fork_ :: CIO a a -> CIO r C.ThreadId
 fork_ = fork return
-{-# INLINE fork_ #-}
+{-# INLINABLE fork_ #-}
 
 forkFinally
     :: (a -> IO r')
@@ -35,14 +35,14 @@ forkFinally k action finalizer =
         fork
             (\ ei -> runCIO return (finalizer ei))
             (try (\ a -> k a) $ restore action)
-{-# INLINE forkFinally #-}
+{-# INLINABLE forkFinally #-}
 
 forkFinally_
     :: CIO a a
     -> (Either E.SomeException a -> CIO r' r')
     -> CIO r C.ThreadId
 forkFinally_ = forkFinally (\a -> return a)
-{-# INLINE forkFinally_ #-}
+{-# INLINABLE forkFinally_ #-}
 
 --forkWithUnmask :: ((forall a. CIO r a -> CIO r a) -> CIO r ()) -> CIO r C.ThreadId
 --forkWithUnmask userAction = liftIO $ C.forkIOWithUnmask $ \ (unmaskIO :: forall a. IO a -> IO a) ->
@@ -54,8 +54,8 @@ forkFinally_ = forkFinally (\a -> return a)
 
 killThread :: C.ThreadId -> CIO r ()
 killThread tid = liftIO $ C.killThread tid
-{-# INLINE killThread #-}
+{-# INLINABLE killThread #-}
 
 threadDelay :: Int -> CIO r ()
 threadDelay n = liftIO $ C.threadDelay n
-{-# INLINE threadDelay #-}
+{-# INLINABLE threadDelay #-}
