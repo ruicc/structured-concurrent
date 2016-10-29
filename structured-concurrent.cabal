@@ -1,7 +1,7 @@
 name:                structured-concurrent
 version:             0.1.1.0
 synopsis:            Exception handlings and modularities to concurrent programming
--- description:         
+-- description:
 license:             MIT
 license-file:        LICENSE
 author:              Kousuke Ruichi
@@ -22,7 +22,7 @@ library
                      , Control.Concurrent.Structured.STM
                      , Control.Concurrent.Structured.Async
                      , Control.Concurrent.Structured.Exception
-  
+
   default-extensions:  ScopedTypeVariables
                      , RankNTypes
   build-depends:       base >=4.7 && <5.0
